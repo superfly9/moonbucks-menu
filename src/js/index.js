@@ -36,8 +36,8 @@ const menuAddHandler = (name) => {
   $menuCount.innerText = `${menuCount} 개`;
 };
 
-const menuEditHandler = (e) => {
-  console.log("[e]:", e);
+const menuEditHandler = (...args) => {
+  const e = args[0];
   const newMenuName = window.prompt("수정할 메뉴명을 입력해주세요.");
   if (newMenuName.trim()) {
     const menu = e.target.closest(".menu-list-item");
@@ -45,7 +45,8 @@ const menuEditHandler = (e) => {
   }
 };
 
-const menuRemoveHandler = (e) => {
+const menuRemoveHandler = (...args) => {
+  const e = args[0];
   const menuName = qs(
     ".menu-name",
     e.target.closest(".menu-list-item")
@@ -78,8 +79,9 @@ $menuList.addEventListener("click", (e) => {
 
   const event = e;
   const menuClickHandler = {
-    edit: () => menuEditHandler(event),
-    remove: () => menuRemoveHandler(event),
+    edit: menuEditHandler.bind(null, event),
+    remove: menuRemoveHandler.bind(null, event),
+    // edit: menuEditHandler.bind(null, event, 10),  args : [PointerEvent,10]
   }[type];
 
   menuClickHandler();
