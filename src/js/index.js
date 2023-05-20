@@ -6,6 +6,7 @@ export const eventListener = (eventType, handler, scope = document) => {
   scope.addEventListener(eventType, handler);
 };
 
+const $menuForm = qs("#espresso-menu-form");
 const $menuInput = qs("#espresso-menu-name");
 const $menuList = qs("#espresso-menu-list");
 const $menuCount = qs(".menu-count");
@@ -35,11 +36,51 @@ const menuAddHandler = (name) => {
   $menuCount.innerText = `${menuCount} 개`;
 };
 
-qs("#espresso-menu-form").addEventListener("submit", (e) => {
+const menuEditHandler = (e) => {
+  console.log("[e]:", e);
+  const newMenuName = window.prompt("수정할 메뉴명을 입력해주세요.");
+  if (newMenuName.trim()) {
+    const menu = e.target.closest(".menu-list-item");
+    qs(".menu-name", menu).innerText = newMenuName;
+  }
+};
+
+const menuRemoveHandler = (e) => {
+  const menuName = qs(
+    ".menu-name",
+    e.target.closest(".menu-list-item")
+  ).innerText;
+
+  if (window.confirm(`${menuName} 메뉴를 삭제하시겠습니까?`)) {
+    e.target.closest(".menu-list-item").remove();
+  }
+};
+
+$menuForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const value = $menuInput.value;
   const name = value.trim();
 
   if (name === "") return;
   else menuAddHandler(name);
+});
+
+$menuList.addEventListener("click", (e) => {
+  let type = undefined;
+  if (e.target.classList.contains("menu-edit-button")) {
+    type = "edit";
+  }
+  if (e.target.classList.contains("menu-remove-button")) {
+    type = "remove";
+  }
+
+  if (!type) return;
+
+  const event = e;
+  const menuClickHandler = {
+    edit: () => menuEditHandler(event),
+    remove: () => menuRemoveHandler(event),
+  }[type];
+
+  menuClickHandler();
 });
