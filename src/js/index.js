@@ -10,6 +10,37 @@ const $menuForm = qs("#espresso-menu-form");
 const $menuInput = qs("#espresso-menu-name");
 const $menuList = qs("#espresso-menu-list");
 const $menuCount = qs(".menu-count");
+const $category = qs("nav");
+
+const INITIAL_DATA = {};
+let CURRENT_CATEGORY = "";
+
+const storageSetItem = (key, value) =>
+  localStorage.setItem(key, JSON.stringify(value));
+const storageGetItem = (key) => JSON.parse(localStorage.getItem(key));
+
+const init = () => {
+  const savedData = storageGetItem("data");
+  const needInit = Object.values(savedData).every((item) => item.length === 0);
+
+  if (needInit) {
+    qsAll("[data-category-name]").forEach((btn, index) => {
+      const categoryName = btn.dataset.categoryName;
+      INITIAL_DATA[categoryName] = [];
+      if (index === 0) CURRENT_CATEGORY = categoryName;
+    });
+    storageSetItem("data", INITIAL_DATA);
+  }
+
+  storageSetItem("current", CURRENT_CATEGORY);
+};
+init();
+
+$category.addEventListener("click", (e) => {
+  const categoryName = e.target.dataset.categoryName;
+  const newData = { ...INITIAL_DATA, selected: categoryName };
+  storageSetItem("data", newData);
+});
 
 const menuDOM = (name) => `
 <li class="menu-list-item d-flex items-center py-2">
@@ -30,6 +61,12 @@ const menuDOM = (name) => `
 `;
 
 const menuAddHandler = (name) => {
+  const storageData = storageGetItem("data");
+  const newMenuData = {
+    ...storageData,
+    [CURRENT_CATEGORY]: [...storageData[CURRENT_CATEGORY], name],
+  };
+  storageSetItem("data", newMenuData);
   $menuList.insertAdjacentHTML("beforeEnd", menuDOM(name));
   $menuInput.value = "";
   const menuCount = $menuList.children.length;
