@@ -12,65 +12,90 @@ const $menuList = qs("#espresso-menu-list");
 const $menuCount = qs(".menu-count");
 const $category = qs("nav");
 
-const INITIAL_DATA = {};
+let INITIAL_DATA = {};
+let DATA = {};
 let CURRENT_CATEGORY = "";
 
-const storageSetItem = (key, value) =>
-  localStorage.setItem(key, JSON.stringify(value));
-const storageGetItem = (key) => JSON.parse(localStorage.getItem(key));
+const store = {
+  setItem(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+  },
+  getItem(key) {
+    return JSON.parse(localStorage.getItem(key));
+  },
+};
+
+const categoryObjectMaker = () => {
+  qsAll("[data-category-name]").forEach((btn) => {
+    const categoryName = btn.dataset.categoryName;
+    INITIAL_DATA[categoryName] = [];
+  });
+};
+
+const menuCount = () => {
+  const menuCount = DATA[CURRENT_CATEGORY].length;
+  $menuCount.innerText = `${menuCount} 개`;
+};
+
+const render = () => {
+  menuCount();
+  $menuList.innerHTML = DATA[CURRENT_CATEGORY].map(
+    ({ name, soldOut }, index) => {
+      return `
+  <li class="menu-list-item d-flex items-center py-2">
+  <span class="w-100 pl-2 menu-name">${name}</span>
+  <button
+      type="button"
+      class="bg-gray-50 text-gray-500 text-sm mr-1 menu-edit-button"
+  >
+      수정
+  </button>
+  <button
+      type="button"
+      class="bg-gray-50 text-gray-500 text-sm menu-remove-button"
+  >
+      삭제
+  </button>
+  </li>
+  `;
+    }
+  ).join("");
+};
 
 const init = () => {
-  const savedData = storageGetItem("data");
-  const needInit = Object.values(savedData).every((item) => item.length === 0);
+  CURRENT_CATEGORY = qs("[data-category-name]").dataset.categoryName;
 
-  if (needInit) {
-    qsAll("[data-category-name]").forEach((btn, index) => {
-      const categoryName = btn.dataset.categoryName;
-      INITIAL_DATA[categoryName] = [];
-      if (index === 0) CURRENT_CATEGORY = categoryName;
-    });
-    storageSetItem("data", INITIAL_DATA);
-  }
+  const savedData = store.getItem("data");
 
-  storageSetItem("current", CURRENT_CATEGORY);
+  const hasSavedData =
+    Array.isArray(savedData[CURRENT_CATEGORY]) &&
+    savedData[CURRENT_CATEGORY].length > 0;
+
+  if (!hasSavedData) categoryObjectMaker();
+  DATA = hasSavedData ? { ...savedData } : { ...INITIAL_DATA };
+
+  store.setItem("data", DATA);
+  render();
 };
+
 init();
 
 $category.addEventListener("click", (e) => {
   const categoryName = e.target.dataset.categoryName;
   const newData = { ...INITIAL_DATA, selected: categoryName };
-  storageSetItem("data", newData);
+  store.setItem("data", newData);
 });
 
-const menuDOM = (name) => `
-<li class="menu-list-item d-flex items-center py-2">
-<span class="w-100 pl-2 menu-name">${name}</span>
-<button
-    type="button"
-    class="bg-gray-50 text-gray-500 text-sm mr-1 menu-edit-button"
->
-    수정
-</button>
-<button
-    type="button"
-    class="bg-gray-50 text-gray-500 text-sm menu-remove-button"
->
-    삭제
-</button>
-</li>
-`;
-
 const menuAddHandler = (name) => {
-  const storageData = storageGetItem("data");
-  const newMenuData = {
-    ...storageData,
-    [CURRENT_CATEGORY]: [...storageData[CURRENT_CATEGORY], name],
-  };
-  storageSetItem("data", newMenuData);
-  $menuList.insertAdjacentHTML("beforeEnd", menuDOM(name));
+  //  {
+  //     espresso : [  {name ,soldOut}, {name ,soldOut} , {name ,soldOut} ],
+  //     blendid :  [  {name ,soldOut}, {name ,soldOut} , {name ,soldOut} ]
+  //  }
+  DATA[CURRENT_CATEGORY].push({ name, soldOut: false });
+
   $menuInput.value = "";
-  const menuCount = $menuList.children.length;
-  $menuCount.innerText = `${menuCount} 개`;
+  store.setItem("data", DATA);
+  render();
 };
 
 const menuEditHandler = (...args) => {
