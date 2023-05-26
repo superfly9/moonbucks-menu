@@ -152,22 +152,15 @@ $menuForm.addEventListener("submit", (e) => {
 });
 
 $menuList.addEventListener("click", (e) => {
-  let type = undefined;
-  let handler = ()=>{};
+  
   if (e.target.classList.contains("menu-edit-button")) {
-    type = "edit";
-    handler = ()=> menuEditHandler(e);
+    menuEditHandler(e);
   }
   if (e.target.classList.contains("menu-remove-button")) {
-    type = "remove";
-    handler = ()=> menuRemoveHandler(e);
+    menuRemoveHandler(e);
   }
   if (e.target.classList.contains("menu-sold-out-button")) {
-    type = "soldOut";
-    handler = ()=> menuSoldOutHanlder(e);
+    menuSoldOutHanlder(e);
   }
 
-  if (!type) return;
-
-  handler();
 });
