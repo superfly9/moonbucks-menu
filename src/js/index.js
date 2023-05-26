@@ -6,9 +6,9 @@ export const eventListener = (eventType, handler, scope = document) => {
   scope.addEventListener(eventType, handler);
 };
 
-const $menuForm = qs("#espresso-menu-form");
-const $menuInput = qs("#espresso-menu-name");
-const $menuList = qs("#espresso-menu-list");
+const $menuForm = qs("#menu-form");
+const $menuInput = qs("#menu-name");
+const $menuList = qs("#menu-list");
 const $menuCount = qs(".menu-count");
 const $category = qs("nav");
 
@@ -42,8 +42,14 @@ const render = () => {
   $menuList.innerHTML = DATA[CURRENT_CATEGORY].map(
     ({ name, soldOut }, index) => {
       return `
-  <li class="menu-list-item d-flex items-center py-2">
-  <span class="w-100 pl-2 menu-name">${name}</span>
+  <li class="menu-list-item d-flex items-center py-2" data-id=${index}>
+  <span class="w-100 pl-2 menu-name ${soldOut ? 'sold-out':''}">${name}</span>
+  <button
+    type="button"
+    class="bg-gray-50 text-gray-500 text-sm mr-1 menu-sold-out-button"
+  >
+    품절
+  </button>
   <button
       type="button"
       class="bg-gray-50 text-gray-500 text-sm mr-1 menu-edit-button"
@@ -67,31 +73,31 @@ const init = () => {
 
   const savedData = store.getItem("data");
 
-  const hasSavedData =
-    Array.isArray(savedData[CURRENT_CATEGORY]) &&
-    savedData[CURRENT_CATEGORY].length > 0;
-
+  const hasSavedData = savedData?.[CURRENT_CATEGORY] && Array.isArray(savedData[CURRENT_CATEGORY]);
+    
   if (!hasSavedData) categoryObjectMaker();
+
   DATA = hasSavedData ? { ...savedData } : { ...INITIAL_DATA };
 
-  store.setItem("data", DATA);
   render();
 };
 
 init();
 
-$category.addEventListener("click", (e) => {
-  const categoryName = e.target.dataset.categoryName;
-  const newData = { ...INITIAL_DATA, selected: categoryName };
-  store.setItem("data", newData);
-});
+const categoryClickHandler =(e) => {
+  if (!e.target.classList.contains('cafe-category-name')) return;
+
+  CURRENT_CATEGORY = e.target.dataset.categoryName;
+
+  qs('.menu-title').innerHTML = e.target.innerHTML;
+  render();
+}
+
+$category.addEventListener("click", categoryClickHandler);
 
 const menuAddHandler = (name) => {
-  //  {
-  //     espresso : [  {name ,soldOut}, {name ,soldOut} , {name ,soldOut} ],
-  //     blendid :  [  {name ,soldOut}, {name ,soldOut} , {name ,soldOut} ]
-  //  }
-  DATA[CURRENT_CATEGORY].push({ name, soldOut: false });
+
+  DATA[CURRENT_CATEGORY].push({ name, soldOut: false , id : DATA[CURRENT_CATEGORY].length + 1 });
 
   $menuInput.value = "";
   store.setItem("data", DATA);
@@ -100,24 +106,44 @@ const menuAddHandler = (name) => {
 
 const menuEditHandler = (...args) => {
   const e = args[0];
-  const newMenuName = window.prompt("수정할 메뉴명을 입력해주세요.");
+  const menuTarget= e.target.closest(".menu-list-item")
+  const currentMenu = qs(".menu-name", menuTarget).innerText;
+  const newMenuName = window.prompt("수정할 메뉴명을 입력해주세요.", currentMenu ) ?? ''
+
   if (newMenuName.trim()) {
     const menu = e.target.closest(".menu-list-item");
-    qs(".menu-name", menu).innerText = newMenuName;
+    const menuId = Number(menu.dataset.id);
+
+    DATA[CURRENT_CATEGORY][menuId]['name'] = newMenuName;
+    store.setItem('data',DATA)
+    render();
   }
 };
 
 const menuRemoveHandler = (...args) => {
   const e = args[0];
-  const menuName = qs(
-    ".menu-name",
-    e.target.closest(".menu-list-item")
-  ).innerText;
+  const menuTarget= e.target.closest(".menu-list-item")
+  const menuName = qs(".menu-name", menuTarget).innerText;
 
   if (window.confirm(`${menuName} 메뉴를 삭제하시겠습니까?`)) {
-    e.target.closest(".menu-list-item").remove();
+    const menu = menuTarget;
+    const menuId = Number(menu.dataset.id);
+
+    DATA[CURRENT_CATEGORY].splice(menuId, 1);
+    store.setItem('data',DATA);
+    render();
   }
 };
+
+const soldOutHanlder = (...args) => {
+  const e = args[0];
+  const menu = e.target.closest(".menu-list-item");
+  const menuId = Number(menu.dataset.id);
+
+  DATA[CURRENT_CATEGORY][menuId]['soldOut'] = !DATA[CURRENT_CATEGORY][menuId]['soldOut'];
+  store.setItem('data',DATA)
+  render();
+}
 
 $menuForm.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -137,13 +163,18 @@ $menuList.addEventListener("click", (e) => {
     type = "remove";
   }
 
+  if (e.target.classList.contains("menu-sold-out-button")) {
+    type = "soldOut";
+  }
+
   if (!type) return;
 
   const event = e;
   const menuClickHandler = {
+    // edit: menuEditHandler.bind(null, event, 10),  args : [PointerEvent,10]
     edit: menuEditHandler.bind(null, event),
     remove: menuRemoveHandler.bind(null, event),
-    // edit: menuEditHandler.bind(null, event, 10),  args : [PointerEvent,10]
+    soldOut : soldOutHanlder.bind(null,event)
   }[type];
 
   menuClickHandler();
