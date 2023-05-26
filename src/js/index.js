@@ -104,8 +104,7 @@ const menuAddHandler = (name) => {
   render();
 };
 
-const menuEditHandler = (...args) => {
-  const e = args[0];
+const menuEditHandler = e => {
   const menuTarget= e.target.closest(".menu-list-item")
   const currentMenu = qs(".menu-name", menuTarget).innerText;
   const newMenuName = window.prompt("수정할 메뉴명을 입력해주세요.", currentMenu ) ?? ''
@@ -120,8 +119,7 @@ const menuEditHandler = (...args) => {
   }
 };
 
-const menuRemoveHandler = (...args) => {
-  const e = args[0];
+const menuRemoveHandler = e => {
   const menuTarget= e.target.closest(".menu-list-item")
   const menuName = qs(".menu-name", menuTarget).innerText;
 
@@ -135,8 +133,7 @@ const menuRemoveHandler = (...args) => {
   }
 };
 
-const soldOutHanlder = (...args) => {
-  const e = args[0];
+const menuSoldOutHanlder = e => {
   const menu = e.target.closest(".menu-list-item");
   const menuId = Number(menu.dataset.id);
 
@@ -156,26 +153,21 @@ $menuForm.addEventListener("submit", (e) => {
 
 $menuList.addEventListener("click", (e) => {
   let type = undefined;
+  let handler = ()=>{};
   if (e.target.classList.contains("menu-edit-button")) {
     type = "edit";
+    handler = ()=> menuEditHandler(e);
   }
   if (e.target.classList.contains("menu-remove-button")) {
     type = "remove";
+    handler = ()=> menuRemoveHandler(e);
   }
-
   if (e.target.classList.contains("menu-sold-out-button")) {
     type = "soldOut";
+    handler = ()=> menuSoldOutHanlder(e);
   }
 
   if (!type) return;
 
-  const event = e;
-  const menuClickHandler = {
-    // edit: menuEditHandler.bind(null, event, 10),  args : [PointerEvent,10]
-    edit: menuEditHandler.bind(null, event),
-    remove: menuRemoveHandler.bind(null, event),
-    soldOut : soldOutHanlder.bind(null,event)
-  }[type];
-
-  menuClickHandler();
+  handler();
 });
